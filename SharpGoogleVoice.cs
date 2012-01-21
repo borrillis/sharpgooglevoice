@@ -1,7 +1,7 @@
 ﻿/*
 
 Copyright (C) 2012 Alex Yumashev
-Jitbit Sofwtare
+Jitbit Software
 http://www.jitbit.com/
 https://bitbucket.org/jitbit/sharpgooglevoice/
 
@@ -38,16 +38,25 @@ namespace Jitbit.Utils
 	{
 		private CookieWebClient _webClient;
 
-		private string rnrse;
+		private string _rnrse;
+
+		private string _username;
+		private string _password;
 
 		private const string USERAGENT = "Mozilla/5.0 (iPhone; U; CPU iPhone OS 2_2_1 like Mac OS X; en-us) AppleWebKit/525.18.1 (KHTML, like Gecko) Version/3.1.1 Mobile/5H11 Safari/525.20";
 
-		public void Login(string username, string password)
+		public SharpGoogleVoice(string username, string password)
 		{
+			_username = username;
+			_password = password;
 			_webClient = new CookieWebClient();
+		}
+
+		private void Login()
+		{
 			_webClient.Headers.Add("User-agent", USERAGENT); //mobile user agent to save bandwidth (google will serve mobile version of the page)
 
-			//get "GALX" value from google login page
+			//get "GALX" field value from google login page
 			string response = Encoding.ASCII.GetString(_webClient.DownloadData("https://accounts.google.com/ServiceLogin?service=grandcentral"));
 			Regex galxRegex = new Regex(@"name=""GALX"".*?value=""(.*?)""", RegexOptions.Singleline);
 			string galx = galxRegex.Match(response).Groups[1].Value;
@@ -60,13 +69,17 @@ namespace Jitbit.Utils
 				"POST",
 				PostParameters(new Dictionary<string, string>
 				               	{
-				               		{"Email", username},
-				               		{"Passwd", password},
-				               		{"GALX", galx}
+				               		{"Email", _username},
+				               		{"Passwd", _password},
+				               		{"GALX", galx},
+									{"PersistentCookie", "yes"}
 				               	}));
 			response = Encoding.ASCII.GetString(responseArray);
 		}
 
+		/// <summary>
+		/// creates a byte-array ready to be sent with a POST-request
+		/// </summary>
 		private static byte[] PostParameters(IDictionary<string, string> parameters)
 		{
 			string paramStr = "";
@@ -79,11 +92,26 @@ namespace Jitbit.Utils
 			return Encoding.ASCII.GetBytes(paramStr);
 		}
 
-		/// <summary>
-		/// Gets google's "session id" field value
-		/// </summary>
-		private void GetRNRSE()
+		private void TryGetRNRSE()
 		{
+			if (!GetRNRSE())
+			{
+				//we can't find the required field on the page. Probably we're logged out. Let's try to login
+				Login();
+				if (!GetRNRSE())
+				{
+					throw new Exception("Unable to get the Session-id field from Google.");
+				}
+			}
+		}
+
+		/// <summary>
+		/// Gets google's "session id" hidden-field value
+		/// </summary>
+		private bool GetRNRSE()
+		{
+			_webClient.Headers.Add("User-agent", USERAGENT); //mobile user agent to save bandwidth (google will serve mobile version of the page)
+
 			//get goovle voice "homepage" (mobile version - to save bandwidth)
 			string response = Encoding.ASCII.GetString(_webClient.DownloadData("https://www.google.com/voice/m"));
 
@@ -91,21 +119,21 @@ namespace Jitbit.Utils
 			Regex rnrRegex = new Regex(@"<input.*?name=""_rnr_se"".*?value=""(.*?)""");
 			if (rnrRegex.IsMatch(response))
 			{
-				rnrse = rnrRegex.Match(response).Groups[1].Value;
+				_rnrse = rnrRegex.Match(response).Groups[1].Value;
+				return true;
 			}
-			else
-				throw new Exception("'RNRSE' FIELD NOT FOUND ON THE PAGE! Something is wrong.");
+			return false;
 		}
 
 		public void SendSMS(string number, string text)
 		{
-			GetRNRSE();
+			TryGetRNRSE();
 
 			byte[] parameters = PostParameters(new Dictionary<string, string>
 			                                   	{
 			                                   		{"phoneNumber", number},
 			                                   		{"text", text},
-			                                   		{"_rnr_se", rnrse}
+			                                   		{"_rnr_se", _rnrse}
 			                                   	});
 
 			_webClient.Headers.Add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
