@@ -138,6 +138,8 @@ namespace Jitbit.Utils
 
 			TryGetRNRSE();
 
+			text = text.Length <= 160 ? text : text.Substring(0, 160);
+
 			byte[] parameters = PostParameters(new Dictionary<string, string>
 			                                   	{
 			                                   		{"phoneNumber", number},
