@@ -125,8 +125,17 @@ namespace Jitbit.Utils
 			return false;
 		}
 
+
+		/// <summary>
+		/// Send s text-message to teh specified number
+		/// </summary>
+		/// <param name="number">Phone number in '+1234567890'-format </param>
+		/// <param name="text">Message text</param>
 		public void SendSMS(string number, string text)
 		{
+			if (!ValidateNumber(number))
+				throw new FormatException("Wrong number format. Should be '+1234567890'. Please try again.");
+
 			TryGetRNRSE();
 
 			byte[] parameters = PostParameters(new Dictionary<string, string>
@@ -139,6 +148,11 @@ namespace Jitbit.Utils
 			_webClient.Headers.Add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
 			byte[] responseArray = _webClient.UploadData("https://www.google.com/voice/sms/send", "POST", parameters);
 			string response = Encoding.ASCII.GetString(responseArray);
+		}
+
+		private static bool ValidateNumber(string number)
+		{
+			return Regex.IsMatch(number, @"^\+\d{10}$");
 		}
 	}
 
