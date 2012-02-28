@@ -154,7 +154,7 @@ namespace Jitbit.Utils
 
 		private static bool ValidateNumber(string number)
 		{
-			return Regex.IsMatch(number, @"^\+\d{10}$");
+			return Regex.IsMatch(number, @"^\+\d{11}$");
 		}
 	}
 
