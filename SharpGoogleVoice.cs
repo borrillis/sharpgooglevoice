@@ -150,9 +150,12 @@ namespace Jitbit.Utils
 			_webClient.Headers.Add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
 			byte[] responseArray = _webClient.UploadData("https://www.google.com/voice/sms/send", "POST", parameters);
 			string response = Encoding.ASCII.GetString(responseArray);
+
+			if (response.IndexOf("\"ok\":true") == -1)
+				throw new Exception("Google did not answer with an OK response\n\n"+response);
 		}
 
-		private static bool ValidateNumber(string number)
+		public static bool ValidateNumber(string number)
 		{
 			return Regex.IsMatch(number, @"^\+\d{11}$");
 		}
