@@ -157,6 +157,7 @@ namespace Jitbit.Utils
 
 		public static bool ValidateNumber(string number)
 		{
+			if (number == null) return false;
 			return Regex.IsMatch(number, @"^\+\d{11}$");
 		}
 	}
