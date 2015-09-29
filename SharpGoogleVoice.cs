@@ -162,6 +162,7 @@ namespace Jitbit.Utils
 		}
 	}
 
+	[System.ComponentModel.DesignerCategory("Code")] //to fix the annoying VS "subtype" issue
 	internal class CookieWebClient : System.Net.WebClient
 	{
 		private CookieContainer _cookieContainer = new CookieContainer();
